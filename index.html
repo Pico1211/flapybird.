@@ -16,6 +16,7 @@
         canvas {
             background-color: lightgreen;
             border: 2px solid black;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -25,7 +26,6 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Bird image (base64 encoded SVG)
         const birdImg = new Image();
         birdImg.src = 'image.png';
 
@@ -36,9 +36,18 @@
         let currentScore = 0;
         let highScore = localStorage.getItem("flappyHighScore") || 0;
 
+        // Tilføj event listeners for både tastatur og mus
+        document.addEventListener("keydown", handleInput);
+        canvas.addEventListener("click", handleInput);
+        canvas.addEventListener("touchstart", handleInput);
+
+        function handleInput(e) {
+            if(e.type === "touchstart") e.preventDefault(); // Forhindr scrolling på mobile
+            bird.velocity = bird.lift;
+        }
+
         function drawBird() {
             if(birdImg.complete) {
-                // Tilføj en lille rotationseffekt baseret på hastigheden
                 ctx.save();
                 ctx.translate(bird.x + bird.width/2, bird.y + bird.height/2);
                 ctx.rotate(bird.velocity * 0.1);
@@ -47,7 +56,7 @@
             }
         }
 
-        // Resten af funktionerne er de samme som før...
+        // Resten af funktionerne forbliver uændret
         function updateBird() {
             bird.velocity += bird.gravity;
             bird.y += bird.velocity;
@@ -119,7 +128,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        document.addEventListener("keydown", () => bird.velocity = bird.lift);
         gameLoop();
     </script>
 </body>
