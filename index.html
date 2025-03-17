@@ -14,7 +14,6 @@
             background-color: skyblue;
         }
         canvas {
-            background-color: lightgreen;
             border: 2px solid black;
             cursor: pointer;
         }
@@ -26,23 +25,49 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
+        // Billeder
+        const bgImg = new Image();
+        bgImg.src = 'background.png';
+
         const birdImg = new Image();
         birdImg.src = 'image.png';
 
-        let bird = { x: 50, y: 150, width: 30, height: 30, gravity: 0.1, lift: -4, velocity: 0 };
+        // Rørbilleder
+        const pipeTopImg = new Image();
+        const pipeBottomImg = new Image();
+        const pipeSVG = `
+            <svg width="60" height="300" viewBox="0 0 60 300" xmlns="http://www.w3.org/2000/svg">
+                <path d="M60 0H0V250C0 275.405 20.3723 300 50 300H60V0Z" fill="#2d5a27"/>
+                <path d="M60 0H50C20.3723 0 0 24.595 0 50V300H60V0Z" fill="#3a7d34"/>
+                <path d="M60 0H0V20H60V0Z" fill="#4CAF50"/>
+            </svg>`;
+        
+        pipeTopImg.src = 'data:image/svg+xml;base64,' + btoa(pipeSVG);
+        pipeBottomImg.src = 'data:image/svg+xml;base64,' + btoa(pipeSVG.replace('fill="#2d5a27"', 'fill="#3a7d34"').replace('fill="#3a7d34"', 'fill="#2d5a27"'));
+
+        // Spilvariabler
+        let bird = { 
+            x: 50, 
+            y: 150, 
+            width: 30, 
+            height: 30, 
+            gravity: 0.1, 
+            lift: -4, 
+            velocity: 0 
+        };
         let pipes = [];
         let frame = 0;
         let gameOver = false;
         let currentScore = 0;
         let highScore = localStorage.getItem("flappyHighScore") || 0;
 
-        // Tilføj event listeners for både tastatur og mus
+        // Input håndtering
         document.addEventListener("keydown", handleInput);
         canvas.addEventListener("click", handleInput);
         canvas.addEventListener("touchstart", handleInput);
 
         function handleInput(e) {
-            if(e.type === "touchstart") e.preventDefault(); // Forhindr scrolling på mobile
+            if(e.type === "touchstart") e.preventDefault();
             bird.velocity = bird.lift;
         }
 
@@ -56,18 +81,55 @@
             }
         }
 
-        // Resten af funktionerne forbliver uændret
+        function createPipe() {
+            const gap = 100;
+            const height = Math.random() * (canvas.height - gap - 100) + 50;
+            
+            pipes.push({ 
+                x: canvas.width, 
+                y: 0, 
+                width: 60, 
+                height: height + 20, 
+                type: 'top',
+                scored: false 
+            });
+            
+            pipes.push({ 
+                x: canvas.width, 
+                y: height + gap, 
+                width: 60, 
+                height: canvas.height - height - gap + 20, 
+                type: 'bottom',
+                scored: false 
+            });
+        }
+
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                if(pipe.type === 'top' && pipeTopImg.complete) {
+                    ctx.drawImage(
+                        pipeTopImg,
+                        pipe.x,
+                        pipe.y - 20,
+                        pipe.width,
+                        pipe.height + 20
+                    );
+                } else if(pipeBottomImg.complete) {
+                    ctx.drawImage(
+                        pipeBottomImg,
+                        pipe.x,
+                        pipe.y,
+                        pipe.width,
+                        pipe.height + 20
+                    );
+                }
+            });
+        }
+
         function updateBird() {
             bird.velocity += bird.gravity;
             bird.y += bird.velocity;
             if (bird.y + bird.height > canvas.height || bird.y < 0) gameOver = true;
-        }
-
-        function createPipe() {
-            let gap = 100;
-            let height = Math.random() * (canvas.height - gap - 50) + 20;
-            pipes.push({ x: canvas.width, y: 0, width: 40, height, scored: false });
-            pipes.push({ x: canvas.width, y: height + gap, width: 40, height: canvas.height - height - gap, scored: false });
         }
 
         function updatePipes() {
@@ -86,11 +148,6 @@
                     }
                 }
             }
-        }
-
-        function drawPipes() {
-            ctx.fillStyle = "green";
-            pipes.forEach(pipe => ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height));
         }
 
         function drawScores() {
@@ -117,18 +174,35 @@
                 document.location.reload();
                 return;
             }
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if(bgImg.complete) {
+                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            }
+            
             drawBird();
             updateBird();
             updatePipes();
             drawPipes();
             drawScores();
             checkCollision();
+            
             frame++;
             requestAnimationFrame(gameLoop);
         }
 
-        gameLoop();
+        // Start spillet når billeder er loadet
+        let loadedImages = 0;
+        function imageLoaded() {
+            loadedImages++;
+            if(loadedImages === 4) gameLoop();
+        }
+
+        bgImg.onload = imageLoaded;
+        birdImg.onload = imageLoaded;
+        pipeTopImg.onload = imageLoaded;
+        pipeBottomImg.onload = imageLoaded;
     </script>
 </body>
 </html>
